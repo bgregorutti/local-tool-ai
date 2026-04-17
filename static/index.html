@@ -60,6 +60,37 @@ body {
 
 #new-chat-btn:hover { background: #1a2a3a; border-color: #3a6aaf; }
 
+#session-tokens {
+  font-size: 11px;
+  color: #444;
+  background: #1b1b1b;
+  border: 1px solid #252525;
+  border-radius: 5px;
+  padding: 7px 9px;
+  line-height: 1.7;
+}
+
+#session-tokens .st-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #383838;
+  margin-bottom: 3px;
+}
+
+#session-tokens .st-total {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  font-variant-numeric: tabular-nums;
+}
+
+#session-tokens .st-detail {
+  font-size: 10px;
+  color: #383838;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Main ────────────────────────────────────────────────────────────── */
 #main {
   flex: 1;
@@ -312,6 +343,11 @@ body {
 <div id="sidebar">
   <h1>Local Tool AI</h1>
   <div id="model-tag">loading…</div>
+  <div id="session-tokens">
+    <div class="st-label">Session tokens</div>
+    <div class="st-total" id="st-total">0</div>
+    <div class="st-detail" id="st-detail">↑ 0 prompt &nbsp;↓ 0 completion</div>
+  </div>
   <button id="new-chat-btn" onclick="newChat()">+ New conversation</button>
 </div>
 
@@ -339,6 +375,25 @@ let sessionId = localStorage.getItem('ltai-session');
 if (!sessionId) {
   sessionId = crypto.randomUUID();
   localStorage.setItem('ltai-session', sessionId);
+}
+
+let sessionPrompt = 0;
+let sessionCompletion = 0;
+
+function updateSessionTokens(prompt, completion) {
+  sessionPrompt     += prompt;
+  sessionCompletion += completion;
+  const total = sessionPrompt + sessionCompletion;
+  document.getElementById('st-total').textContent  = total.toLocaleString();
+  document.getElementById('st-detail').innerHTML   =
+    `↑ ${sessionPrompt.toLocaleString()} prompt &nbsp;↓ ${sessionCompletion.toLocaleString()} completion`;
+}
+
+function resetSessionTokens() {
+  sessionPrompt = 0;
+  sessionCompletion = 0;
+  document.getElementById('st-total').textContent = '0';
+  document.getElementById('st-detail').innerHTML  = '↑ 0 prompt &nbsp;↓ 0 completion';
 }
 
 // ── Model info ────────────────────────────────────────────────────────────────
@@ -371,6 +426,7 @@ async function newChat() {
     headers: { 'X-Session-ID': sessionId },
   }).catch(() => {});
 
+  resetSessionTokens();
   const msgs = document.getElementById('messages');
   msgs.innerHTML = `
     <div id="empty-state">
@@ -462,6 +518,7 @@ function handleEvent(evt, assistantRow, bubble) {
 
     case 'usage':
       appendUsageMeta(assistantRow, evt.prompt_tokens, evt.completion_tokens);
+      updateSessionTokens(evt.prompt_tokens, evt.completion_tokens);
       break;
 
     case 'done':
