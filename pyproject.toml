@@ -9,17 +9,19 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "typer>=0.12.0",
     "fastapi>=0.111.0",
-    "uvicorn[standard]>=0.30.0",
+    "uvicorn[standard]>=0.30.0"
 ]
 
 [project.scripts]
 local-tool-ai = "main:app"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.2.0",
-    "pytest-mock>=3.14.0",
-    "ruff>=0.4.0",
+    "pytest-mock>=3.14.0"
+]
+lint = [
+    "ruff>=0.4.0"
 ]
 
 [tool.ruff]

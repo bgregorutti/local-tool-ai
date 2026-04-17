@@ -286,6 +286,8 @@ dependencies = [
 dev = [
     { name = "pytest" },
     { name = "pytest-mock" },
+]
+lint = [
     { name = "ruff" },
 ]
 
@@ -303,8 +305,8 @@ requires-dist = [
 dev = [
     { name = "pytest", specifier = ">=8.2.0" },
     { name = "pytest-mock", specifier = ">=3.14.0" },
-    { name = "ruff", specifier = ">=0.4.0" },
 ]
+lint = [{ name = "ruff", specifier = ">=0.4.0" }]
 
 [[package]]
 name = "markdown-it-py"
