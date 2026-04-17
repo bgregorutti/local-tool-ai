@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    ports:
+      - "${WEB_PORT:-7860}:7860"
+    env_file:
+      - .env
+    environment:
+      # LM Studio runs on the host — use host-gateway so the container can reach it
+      LM_STUDIO_BASE_URL: ${LM_STUDIO_BASE_URL:-http://host-gateway:1234/v1}
+    extra_hosts:
+      - "host-gateway:host-gateway"
+    restart: unless-stopped
