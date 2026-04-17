@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
-from typing import Iterator
+from typing import AsyncGenerator, Iterator
 
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from rich.console import Console
 from rich.markup import escape
@@ -200,3 +201,98 @@ def _print_tool_result(name: str, result: str) -> None:
             border_style="blue",
         )
     )
+
+
+def _async_client() -> AsyncOpenAI:
+    return AsyncOpenAI(
+        base_url=os.environ.get("LM_STUDIO_BASE_URL", "http://localhost:1234/v1"),
+        api_key=os.environ.get("LM_STUDIO_API_KEY", "lm-studio"),
+    )
+
+
+async def run_events(messages: list) -> AsyncGenerator[dict, None]:
+    """Async generator that drives the agentic loop and yields SSE-ready event dicts.
+
+    *messages* is the full conversation history (system + prior turns + latest user
+    message). It is mutated in-place so the caller's session stays up to date.
+
+    Event shapes:
+      {"type": "tool_call",   "name": str, "args": dict}
+      {"type": "tool_result", "name": str, "content": str}
+      {"type": "text_delta",  "content": str}
+      {"type": "done"}
+      {"type": "error",       "message": str}
+    """
+    client = _async_client()
+
+    for _ in range(_max_iterations()):
+        stream = await client.chat.completions.create(
+            model=_model(),
+            messages=messages,  # type: ignore[arg-type]
+            tools=SCHEMAS,  # type: ignore[arg-type]
+            tool_choice="auto",
+            stream=True,
+        )
+
+        accumulated_content = ""
+        accumulated_tool_calls: list[dict] = []
+
+        async for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+
+            if delta.content:
+                accumulated_content += delta.content
+                # Only stream text to the client when we know it's a final-answer turn
+                # (no tool calls seen yet — models don't mix text + tool calls).
+                if not accumulated_tool_calls:
+                    yield {"type": "text_delta", "content": delta.content}
+
+            if delta.tool_calls:
+                for tc_d in delta.tool_calls:
+                    idx = tc_d.index
+                    while len(accumulated_tool_calls) <= idx:
+                        accumulated_tool_calls.append(
+                            {"id": "", "type": "function", "function": {"name": "", "arguments": ""}}
+                        )
+                    if tc_d.id:
+                        accumulated_tool_calls[idx]["id"] = tc_d.id
+                    if tc_d.function:
+                        if tc_d.function.name:
+                            accumulated_tool_calls[idx]["function"]["name"] += tc_d.function.name
+                        if tc_d.function.arguments:
+                            accumulated_tool_calls[idx]["function"]["arguments"] += (
+                                tc_d.function.arguments
+                            )
+
+        if not accumulated_tool_calls:
+            # Final answer — content was already streamed token by token above.
+            messages.append({"role": "assistant", "content": accumulated_content})
+            yield {"type": "done"}
+            return
+
+        # Tool-call turn: dispatch each tool sequentially.
+        assistant_msg: dict = {"role": "assistant", "tool_calls": accumulated_tool_calls}
+        if accumulated_content:
+            assistant_msg["content"] = accumulated_content
+        messages.append(assistant_msg)
+
+        for tc in accumulated_tool_calls:
+            name = tc["function"]["name"]
+            raw_args = tc["function"]["arguments"]
+            try:
+                args: dict = json.loads(raw_args)
+            except json.JSONDecodeError:
+                args = {}
+
+            yield {"type": "tool_call", "name": name, "args": args}
+
+            result = await asyncio.to_thread(dispatch, name, args)
+
+            display = result[:500] + ("…" if len(result) > 500 else "")
+            yield {"type": "tool_result", "name": name, "content": display}
+
+            messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
+
+    yield {"type": "error", "message": "Maximum iterations reached without a final answer."}

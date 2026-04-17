@@ -9,7 +9,8 @@ bash execution) to answer user queries.
 - **Runtime**: Python 3.11+, managed with `uv`
 - **LLM backend**: LM Studio (`http://localhost:1234/v1`) — OpenAI-compatible
 - **Client**: `openai` Python SDK (pointed at local base URL)
-- **UI**: `rich` for terminal output
+- **CLI UI**: `rich` for terminal output
+- **Web UI**: FastAPI + SSE streaming, vanilla HTML/CSS/JS (`static/index.html`)
 - **Config**: `.env` via `python-dotenv`
 
 ## Model Configuration
@@ -23,8 +24,11 @@ LM_STUDIO_API_KEY=lm-studio            # arbitrary, LM Studio ignores it
 ## Project Layout
 ```
 local-tool-ai/
-├── agent.py          # Core agentic loop
+├── agent.py          # Core agentic loop (CLI) + run_events async generator (web)
 ├── main.py           # CLI entry point
+├── server.py         # FastAPI web server (SSE streaming, session history)
+├── static/
+│   └── index.html    # Web chat UI (self-contained HTML/CSS/JS)
 ├── tools/
 │   ├── __init__.py
 │   ├── registry.py   # Schema export + dispatch(name, args)
@@ -54,9 +58,18 @@ local-tool-ai/
 - All tool errors are caught and returned as error strings (never raise into agent)
 
 ## Running
+
+**CLI:**
 ```bash
 uv run main.py "list the files in the current directory"
 uv run main.py --repl          # interactive mode
+```
+
+**Web UI:**
+```bash
+uv run server.py               # serves on http://localhost:7860
+# or
+uvicorn server:app --reload    # dev mode with auto-reload
 ```
 
 ## Testing
