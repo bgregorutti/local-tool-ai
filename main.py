@@ -7,11 +7,8 @@ import sys
 from pathlib import Path
 
 # Load .env before importing anything that reads env vars
-_env_file = Path(__file__).parent / ".env"
-if _env_file.exists():
-    from dotenv import load_dotenv
-
-    load_dotenv(_env_file)
+from dotenv import load_dotenv
+load_dotenv()
 
 import typer
 from rich.console import Console
