@@ -129,6 +129,14 @@ body {
   border-bottom-left-radius: 4px;
 }
 
+.usage-meta {
+  font-size: 11px;
+  color: #383838;
+  margin-top: 5px;
+  padding-left: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* blinking cursor during streaming */
 .cursor {
   display: inline-block;
@@ -452,6 +460,10 @@ function handleEvent(evt, assistantRow, bubble) {
       appendDelta(bubble, evt.content);
       break;
 
+    case 'usage':
+      appendUsageMeta(assistantRow, evt.prompt_tokens, evt.completion_tokens);
+      break;
+
     case 'done':
       removeCursor(bubble);
       break;
@@ -540,6 +552,13 @@ function finaliseToolCard(card, content) {
   body.appendChild(hr);
   body.appendChild(lbl);
   body.appendChild(res);
+}
+
+function appendUsageMeta(assistantRow, prompt, completion) {
+  if (!prompt && !completion) return;
+  const meta = el('div', 'usage-meta');
+  meta.textContent = `↑ ${prompt.toLocaleString()} prompt  ↓ ${completion.toLocaleString()} completion  · ${(prompt + completion).toLocaleString()} total tokens`;
+  assistantRow.appendChild(meta);
 }
 
 function appendError(msg) {

@@ -56,6 +56,9 @@ def run(
     if verbose:
         console.print(Panel(escape(user_query), title="[bold cyan]User[/]", border_style="cyan"))
 
+    total_prompt_tokens = 0
+    total_completion_tokens = 0
+
     for iteration in range(1, _max_iterations() + 1):
         response = client.chat.completions.create(
             model=_model(),
@@ -63,6 +66,10 @@ def run(
             tools=SCHEMAS,  # type: ignore[arg-type]
             tool_choice="auto",
         )
+
+        if response.usage:
+            total_prompt_tokens += response.usage.prompt_tokens
+            total_completion_tokens += response.usage.completion_tokens
 
         message = response.choices[0].message
         # Append assistant turn (strip None fields manually for compat)
@@ -87,6 +94,7 @@ def run(
                 console.print(
                     Panel(escape(answer), title="[bold green]Assistant[/]", border_style="green")
                 )
+                _print_usage(total_prompt_tokens, total_completion_tokens)
             return answer
 
         # Process each tool call
@@ -127,11 +135,15 @@ def run(
         }
     )
     final = client.chat.completions.create(model=_model(), messages=messages)
+    if final.usage:
+        total_prompt_tokens += final.usage.prompt_tokens
+        total_completion_tokens += final.usage.completion_tokens
     answer = final.choices[0].message.content or ""
     if verbose:
         console.print(
             Panel(escape(answer), title="[bold green]Assistant[/]", border_style="green")
         )
+        _print_usage(total_prompt_tokens, total_completion_tokens)
     return answer
 
 
@@ -192,6 +204,15 @@ def _print_tool_call(name: str, args: dict, iteration: int) -> None:
     console.print(Panel(text, title="[bold magenta]Tool Call[/]", border_style="magenta"))
 
 
+def _print_usage(prompt: int, completion: int) -> None:
+    if not (prompt or completion):
+        return
+    console.print(
+        f"[dim]tokens — prompt: {prompt:,}  completion: {completion:,}  "
+        f"total: {prompt + completion:,}[/]"
+    )
+
+
 def _print_tool_result(name: str, result: str) -> None:
     preview = result[:500] + ("…" if len(result) > 500 else "")
     console.print(
@@ -221,9 +242,13 @@ async def run_events(messages: list) -> AsyncGenerator[dict, None]:
       {"type": "tool_result", "name": str, "content": str}
       {"type": "text_delta",  "content": str}
       {"type": "done"}
+      {"type": "usage",       "prompt_tokens": int, "completion_tokens": int, "total_tokens": int}
       {"type": "error",       "message": str}
     """
     client = _async_client()
+
+    total_prompt_tokens = 0
+    total_completion_tokens = 0
 
     for _ in range(_max_iterations()):
         stream = await client.chat.completions.create(
@@ -232,12 +257,18 @@ async def run_events(messages: list) -> AsyncGenerator[dict, None]:
             tools=SCHEMAS,  # type: ignore[arg-type]
             tool_choice="auto",
             stream=True,
+            stream_options={"include_usage": True},
         )
 
         accumulated_content = ""
         accumulated_tool_calls: list[dict] = []
 
         async for chunk in stream:
+            # Usage arrives in the terminal chunk (choices is empty).
+            if chunk.usage:
+                total_prompt_tokens += chunk.usage.prompt_tokens or 0
+                total_completion_tokens += chunk.usage.completion_tokens or 0
+
             if not chunk.choices:
                 continue
             delta = chunk.choices[0].delta
@@ -269,6 +300,12 @@ async def run_events(messages: list) -> AsyncGenerator[dict, None]:
         if not accumulated_tool_calls:
             # Final answer — content was already streamed token by token above.
             messages.append({"role": "assistant", "content": accumulated_content})
+            yield {
+                "type": "usage",
+                "prompt_tokens": total_prompt_tokens,
+                "completion_tokens": total_completion_tokens,
+                "total_tokens": total_prompt_tokens + total_completion_tokens,
+            }
             yield {"type": "done"}
             return
 
