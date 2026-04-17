@@ -1,0 +1,31 @@
+[project]
+name = "local-tool-ai"
+version = "0.1.0"
+description = "Local tool-calling agent powered by LM Studio"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.30.0",
+    "rich>=13.7.0",
+    "python-dotenv>=1.0.0",
+    "typer>=0.12.0",
+]
+
+[project.scripts]
+local-tool-ai = "main:app"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.2.0",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.4.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
