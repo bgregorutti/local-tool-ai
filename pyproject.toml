@@ -13,7 +13,12 @@ dependencies = [
 ]
 
 [project.scripts]
-local-tool-ai = "main:app"
+main = "main:app"
+server = "server:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
