@@ -14,7 +14,12 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.text import Text
 
-from tools.registry import SCHEMAS, dispatch
+from tools.registry import dispatch, get_schemas
+
+
+def _schemas() -> list[dict]:
+    safe_mode = os.environ.get("SAFE_MODE") == "1"
+    return get_schemas(safe_mode=safe_mode)
 
 console = Console()
 
@@ -63,7 +68,7 @@ def run(
         response = client.chat.completions.create(
             model=_model(),
             messages=messages,
-            tools=SCHEMAS,  # type: ignore[arg-type]
+            tools=_schemas(),  # type: ignore[arg-type]
             tool_choice="auto",
         )
 
@@ -163,7 +168,7 @@ def stream(
         response = client.chat.completions.create(
             model=_model(),
             messages=messages,
-            tools=SCHEMAS,  # type: ignore[arg-type]
+            tools=_schemas(),  # type: ignore[arg-type]
             tool_choice="auto",
         )
         message = response.choices[0].message
@@ -254,7 +259,7 @@ async def run_events(messages: list) -> AsyncGenerator[dict, None]:
         stream = await client.chat.completions.create(
             model=_model(),
             messages=messages,  # type: ignore[arg-type]
-            tools=SCHEMAS,  # type: ignore[arg-type]
+            tools=_schemas(),  # type: ignore[arg-type]
             tool_choice="auto",
             stream=True,
             stream_options={"include_usage": True},
