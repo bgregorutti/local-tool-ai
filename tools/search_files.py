@@ -11,8 +11,11 @@ SCHEMA: dict = {
         "name": "search_files",
         "description": (
             "Recursively search for files whose names match a glob pattern "
-            "under a given directory. Returns a newline-separated list of "
-            "matching absolute paths, or a message when nothing is found."
+            "under a given directory. "
+            "USE THIS instead of run_bash when the goal is to find or locate files. "
+            "Do NOT use run_bash (e.g. find, locate, ls -R) for this purpose. "
+            "Returns a newline-separated list of matching absolute paths, "
+            "or a message when nothing is found."
         ),
         "parameters": {
             "type": "object",

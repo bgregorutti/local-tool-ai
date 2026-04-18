@@ -9,7 +9,8 @@ SCHEMA: dict = {
     "function": {
         "name": "list_folder",
         "description": (
-            "List files and subdirectories inside a folder. "
+            "List the contents of a directory and its subdirectories. "
+            "USE THIS instead of run_bash when the goal is to list files or folders. "
             "Returns a formatted tree-like listing with file sizes."
         ),
         "parameters": {

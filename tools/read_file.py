@@ -10,7 +10,9 @@ SCHEMA: dict = {
         "name": "read_file",
         "description": (
             "Read and return the text content of a file. "
-            "Optionally restrict to a line range."
+            "USE THIS instead of run_bash when the goal is to read or inspect a file. "
+            "Optionally restrict to a line range. "
+            "Do NOT use run_bash (e.g. cat, head, tail) for this purpose."
         ),
         "parameters": {
             "type": "object",

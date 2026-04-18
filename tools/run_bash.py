@@ -9,9 +9,9 @@ SCHEMA: dict = {
     "function": {
         "name": "run_bash",
         "description": (
-            "Execute a shell command and return its stdout and stderr. "
-            "Use for tasks like running scripts, checking processes, "
-            "or any operation requiring a shell."
+            "Run an arbitrary shell command. "
+            "Only use this when no other specific tool covers the task. "
+            "Do NOT use for listing directories, reading files, or searching."
         ),
         "parameters": {
             "type": "object",

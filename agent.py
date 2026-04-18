@@ -23,11 +23,19 @@ def _schemas() -> list[dict]:
 
 console = Console()
 
-DEFAULT_SYSTEM = (
-    "You are a helpful assistant with access to tools that let you read the "
-    "filesystem and run shell commands. Use them whenever they would help you "
-    "answer the user's question accurately. Think step-by-step."
-)
+DEFAULT_SYSTEM = """
+You are a helpful assistant with access to tools to read the filesystem 
+and run shell commands.
+
+Tool usage rules:
+- To list directory contents, ALWAYS use `list_folder`. Never use `run_bash` for this.
+- To search for files, ALWAYS use `search_files`. Never use `run_bash` for this.
+- To read a file, ALWAYS use `read_file`. Never use `run_bash` for this.
+- Only use `run_bash` for tasks that NO other tool can handle.
+
+Think step-by-step. Prefer the most specific tool available over a generic one.
+"""
+
 
 
 def _client() -> OpenAI:
