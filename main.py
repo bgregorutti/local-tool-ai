@@ -44,7 +44,12 @@ def main(
         "-m",
         help="Override LM_STUDIO_MODEL env var.",
     ),
+    safe: bool = typer.Option(False, "--safe", help="Disable destructive tools (safe mode)."),
 ) -> None:
+    if safe:
+        os.environ["SAFE_MODE"] = "1"
+        console.print("[bold yellow]Running in safe mode — destructive tools disabled[/]")
+
     if model:
         os.environ["LM_STUDIO_MODEL"] = model
 
