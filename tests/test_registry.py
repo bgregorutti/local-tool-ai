@@ -14,9 +14,15 @@ def test_readonly_and_destructive_sets():
     assert READONLY_TOOLS.isdisjoint(DESTRUCTIVE_TOOLS)
 
 
-def test_get_schemas_normal_mode():
-    names = {s["function"]["name"] for s in get_schemas(safe_mode=False)}
+def test_get_schemas_bash_enabled():
+    names = {s["function"]["name"] for s in get_schemas(safe_mode=False, bash_enabled=True)}
     assert "run_bash" in names
+    assert "read_file" in names
+
+
+def test_get_schemas_bash_disabled():
+    names = {s["function"]["name"] for s in get_schemas(safe_mode=False, bash_enabled=False)}
+    assert "run_bash" not in names
     assert "read_file" in names
 
 
@@ -51,18 +57,29 @@ def test_dispatch_bad_json_string():
     assert "Error" in result
 
 
+def test_dispatch_run_bash_disabled_blocks_without_prompt(monkeypatch):
+    # When bash_enabled=False, run_bash is hard-blocked before any confirmation prompt.
+    import sys
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    prompted = []
+    monkeypatch.setattr("builtins.input", lambda _: prompted.append(1) or "y")
+    result = dispatch("run_bash", {"command": "echo hi"}, bash_enabled=False)
+    assert result == "run_bash is disabled. Use a specific tool instead."
+    assert not prompted, "confirmation prompt must not appear when bash is disabled"
+
+
 def test_dispatch_destructive_auto_cancels_non_tty(monkeypatch):
-    # In test (non-TTY) environment, destructive tools auto-cancel
+    # With bash enabled but non-TTY stdin, destructive tools auto-cancel.
     import sys
     monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
-    result = dispatch("run_bash", {"command": "echo hi"})
+    result = dispatch("run_bash", {"command": "echo hi"}, bash_enabled=True)
     assert result == "Action cancelled by user."
 
 
 def test_bash_blacklist_blocks_after_confirmation(monkeypatch):
-    # Simulate user typing 'y' but command is blacklisted
+    # Blacklist is enforced even after the user confirms.
     import sys
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
     monkeypatch.setattr("builtins.input", lambda _: "y")
-    result = dispatch("run_bash", {"command": "sudo rm -rf /"})
+    result = dispatch("run_bash", {"command": "sudo rm -rf /"}, bash_enabled=True)
     assert "blacklisted" in result.lower()

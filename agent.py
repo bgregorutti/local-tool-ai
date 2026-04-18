@@ -17,9 +17,13 @@ from rich.text import Text
 from tools.registry import DESTRUCTIVE_TOOLS, dispatch, get_schemas
 
 
+def _bash_enabled() -> bool:
+    return os.environ.get("BASH_ENABLED") == "1"
+
+
 def _schemas() -> list[dict]:
     safe_mode = os.environ.get("SAFE_MODE") == "1"
-    return get_schemas(safe_mode=safe_mode)
+    return get_schemas(safe_mode=safe_mode, bash_enabled=_bash_enabled())
 
 console = Console()
 
@@ -123,7 +127,7 @@ def run(
             if verbose:
                 _print_tool_call(name, args, iteration)
 
-            result = dispatch(name, args)
+            result = dispatch(name, args, bash_enabled=_bash_enabled())
 
             if verbose:
                 _print_tool_result(name, result)
@@ -200,7 +204,7 @@ def stream(
             return
 
         for tc in message.tool_calls:
-            result = dispatch(tc.function.name, tc.function.arguments)
+            result = dispatch(tc.function.name, tc.function.arguments, bash_enabled=_bash_enabled())
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
 
     yield "(max iterations reached)"
@@ -332,6 +336,8 @@ async def run_events(
             assistant_msg["content"] = accumulated_content
         messages.append(assistant_msg)
 
+        bash_enabled = _bash_enabled()
+
         for tc in accumulated_tool_calls:
             name = tc["function"]["name"]
             raw_args = tc["function"]["arguments"]
@@ -340,19 +346,24 @@ async def run_events(
             except json.JSONDecodeError:
                 args = {}
 
-            if name in DESTRUCTIVE_TOOLS and confirm_destructive is not None:
+            if name == "run_bash" and not bash_enabled:
+                # Bash gate: hard block with no confirmation prompt shown to the user.
+                result = "run_bash is disabled. Use a specific tool instead."
+            elif name in DESTRUCTIVE_TOOLS and confirm_destructive is not None:
                 # Web confirmation flow: pause, ask the user, then dispatch.
                 yield {"type": "confirmation_required", "name": name, "args": args}
                 allowed = await confirm_destructive(name, args)
                 if allowed:
                     result = await asyncio.to_thread(
-                        lambda n=name, a=args: dispatch(n, a, skip_confirmation=True)
+                        lambda n=name, a=args: dispatch(n, a, skip_confirmation=True, bash_enabled=bash_enabled)
                     )
                 else:
                     result = "Action cancelled by user."
             else:
                 yield {"type": "tool_call", "name": name, "args": args}
-                result = await asyncio.to_thread(dispatch, name, args)
+                result = await asyncio.to_thread(
+                    lambda n=name, a=args: dispatch(n, a, bash_enabled=bash_enabled)
+                )
 
             display = result[:500] + ("…" if len(result) > 500 else "")
             yield {"type": "tool_result", "name": name, "content": display}

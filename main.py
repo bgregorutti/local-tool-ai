@@ -45,10 +45,19 @@ def main(
         help="Override LM_STUDIO_MODEL env var.",
     ),
     safe: bool = typer.Option(False, "--safe", help="Disable destructive tools (safe mode)."),
+    enable_bash: bool = typer.Option(
+        False, "--enable-bash", help="Enable run_bash tool (trusted environments only)."
+    ),
 ) -> None:
     if safe:
         os.environ["SAFE_MODE"] = "1"
         console.print("[bold yellow]Running in safe mode — destructive tools disabled[/]")
+
+    if enable_bash:
+        os.environ["BASH_ENABLED"] = "1"
+        console.print(
+            "[bold yellow]⚠️  run_bash is enabled. Only use this in a trusted environment.[/]"
+        )
 
     if model:
         os.environ["LM_STUDIO_MODEL"] = model

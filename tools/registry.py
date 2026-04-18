@@ -61,9 +61,17 @@ _HANDLERS: dict[str, callable] = {
 }
 
 
-def get_schemas(safe_mode: bool = False) -> list[dict]:
-    """Return schemas to send to the model; omits destructive tools in safe mode."""
-    return READONLY_SCHEMAS if safe_mode else SCHEMAS
+def get_schemas(safe_mode: bool = False, bash_enabled: bool = False) -> list[dict]:
+    """Return schemas to send to the model.
+
+    safe_mode=True  → read-only tools only (all destructive tools removed)
+    bash_enabled=False → run_bash excluded; other destructive tools kept
+    """
+    if safe_mode:
+        return READONLY_SCHEMAS
+    if not bash_enabled:
+        return [s for s in SCHEMAS if s is not run_bash.SCHEMA]
+    return SCHEMAS
 
 
 def _get_allowed_root() -> Path | None:
@@ -122,11 +130,15 @@ def dispatch(
     tool_args: dict | str,
     *,
     skip_confirmation: bool = False,
+    bash_enabled: bool = False,
 ) -> str:
     """Call the tool identified by *tool_name* with *tool_args*.
 
     *tool_args* may arrive as a JSON string (model sometimes serialises it).
     Always returns a string suitable for the tool-result message.
+
+    *bash_enabled* must be True for run_bash to execute; otherwise it is
+    hard-blocked before any confirmation prompt is shown.
 
     *skip_confirmation* lets callers that have already obtained user consent
     (e.g. the web UI via an async confirmation flow) bypass the stdin prompt
@@ -138,6 +150,10 @@ def dispatch(
         except json.JSONDecodeError as exc:
             return f"Error: could not parse tool arguments as JSON: {exc}"
 
+    # 1. Bash gate — hard block, no prompt, no exception
+    if tool_name == "run_bash" and not bash_enabled:
+        return "run_bash is disabled. Use a specific tool instead."
+
     handler = _HANDLERS.get(tool_name)
     if handler is None:
         available = ", ".join(_HANDLERS)
@@ -148,7 +164,7 @@ def dispatch(
     if path_error:
         return path_error
 
-    # Human-in-the-loop confirmation for destructive tools
+    # 2. Human-in-the-loop confirmation for destructive tools (only reached if bash is enabled)
     if tool_name in DESTRUCTIVE_TOOLS:
         if not skip_confirmation and not _confirm_destructive(tool_name, tool_args):
             return "Action cancelled by user."
@@ -160,6 +176,7 @@ def dispatch(
             if blacklist_error:
                 return blacklist_error
 
+    # 3. Execute
     try:
         return handler(**tool_args)
     except TypeError as exc:

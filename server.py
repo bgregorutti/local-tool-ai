@@ -20,6 +20,13 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 
 app = FastAPI(title="Local Tool AI")
 
+
+@app.on_event("startup")
+async def _startup() -> None:
+    if os.environ.get("BASH_ENABLED") == "1":
+        print("⚠️  run_bash is enabled. Only use this in a trusted environment.")
+
+
 # In-memory session store: session_id -> message list (includes system message)
 _sessions: dict[str, list] = {}
 
@@ -105,9 +112,24 @@ async def reset(request: Request) -> JSONResponse:
 
 
 def run() -> None:
+    import argparse
+
     import uvicorn
 
-    port = int(os.environ.get("WEB_PORT", "7860"))
+    parser = argparse.ArgumentParser(description="Local Tool AI web server")
+    parser.add_argument(
+        "--enable-bash",
+        action="store_true",
+        help="Enable run_bash tool (trusted environments only).",
+    )
+    parser.add_argument("--port", type=int, default=None, help="Port to listen on.")
+    parsed = parser.parse_args()
+
+    if parsed.enable_bash:
+        os.environ["BASH_ENABLED"] = "1"
+        print("⚠️  run_bash is enabled. Only use this in a trusted environment.")
+
+    port = parsed.port or int(os.environ.get("WEB_PORT", "7860"))
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 
