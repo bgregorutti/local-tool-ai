@@ -324,6 +324,32 @@ body {
   overflow-y: auto;
 }
 
+/* ── Confirmation card ───────────────────────────────────────────────── */
+.tool-card.confirmation .tool-header { background: #1a1525; }
+.tool-card.confirmation .tool-name   { color: #f5a623; }
+
+.confirm-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.confirm-btn {
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.confirm-btn.allow  { background: #1a3a1a; color: #7ec87e; border: 1px solid #2a5a2a; }
+.confirm-btn.allow:hover:not(:disabled)  { background: #204520; }
+.confirm-btn.cancel { background: #3a1a1a; color: #ff7070; border: 1px solid #5a2a2a; }
+.confirm-btn.cancel:hover:not(:disabled) { background: #4a1f1f; }
+.confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* ── Error banner ────────────────────────────────────────────────────── */
 .error-row {
   padding: 3px 28px;
@@ -559,6 +585,10 @@ let _activeToolCard = null;
 
 function handleEvent(evt, assistantRow, bubble) {
   switch (evt.type) {
+    case 'confirmation_required':
+      _activeToolCard = appendConfirmationCard(evt.name, evt.args, assistantRow);
+      break;
+
     case 'tool_call':
       _activeToolCard = appendToolCard(evt.name, evt.args, assistantRow);
       break;
@@ -657,19 +687,68 @@ function appendToolCard(name, args, assistantRow) {
 }
 
 function finaliseToolCard(card, content) {
+  const cancelled = content === 'Action cancelled by user.';
+
   const status = card.querySelector('.tool-status');
-  if (status) status.textContent = 'done';
+  if (status && !cancelled) status.textContent = 'done';
 
   const body = card.querySelector('.tool-body');
   if (!body) return;
 
+  // Remove pending confirm buttons if still present
+  body.querySelector('.confirm-btns')?.remove();
+
   const hr  = document.createElement('hr');  hr.className = 'tool-divider';
   const lbl = el('div', 'tool-label');       lbl.textContent = 'Result';
   const res = el('div', 'tool-result');      res.textContent = content;
+  if (cancelled) res.style.color = '#ff7070';
 
   body.appendChild(hr);
   body.appendChild(lbl);
   body.appendChild(res);
+}
+
+function appendConfirmationCard(name, args, assistantRow) {
+  const argsStr = JSON.stringify(args, null, 2);
+  const row  = el('div', 'tool-row');
+  const card = el('div', 'tool-card confirmation open');
+
+  card.innerHTML = `
+    <div class="tool-header" onclick="this.closest('.tool-card').classList.toggle('open')">
+      <span style="font-size:13px">⚠</span>
+      <span class="tool-name">${esc(name)}</span>
+      <span class="tool-status">awaiting confirmation</span>
+      <span class="tool-chevron">▶</span>
+    </div>
+    <div class="tool-body">
+      <div class="tool-label">Arguments</div>
+      <div class="tool-code">${esc(argsStr)}</div>
+      <div class="confirm-btns">
+        <button class="confirm-btn allow"
+          onclick="sendConfirm(true, this.closest('.tool-card'))">Allow</button>
+        <button class="confirm-btn cancel"
+          onclick="sendConfirm(false, this.closest('.tool-card'))">Cancel</button>
+      </div>
+    </div>`;
+
+  row.appendChild(card);
+  msgsEl.insertBefore(row, assistantRow);
+  scrollBottom();
+  return card;
+}
+
+async function sendConfirm(allowed, card) {
+  card.querySelectorAll('.confirm-btn').forEach(b => { b.disabled = true; });
+  const status = card.querySelector('.tool-status');
+  if (status) status.textContent = allowed ? 'allowed — running…' : 'cancelled';
+  const nameEl = card.querySelector('.tool-name');
+  if (nameEl) nameEl.style.color = allowed ? '#7ec87e' : '#ff7070';
+
+  await fetch('/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Session-ID': sessionId },
+    body: JSON.stringify({ allowed }),
+  }).catch(() => {});
 }
 
 function appendUsageMeta(assistantRow, prompt, completion) {

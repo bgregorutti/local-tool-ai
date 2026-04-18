@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-from typing import AsyncGenerator, Iterator
+from typing import AsyncGenerator, Awaitable, Callable, Iterator
 
 from openai import AsyncOpenAI, OpenAI
 from openai.types.chat import ChatCompletionMessageParam
@@ -14,7 +14,7 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.text import Text
 
-from tools.registry import dispatch, get_schemas
+from tools.registry import DESTRUCTIVE_TOOLS, dispatch, get_schemas
 
 
 def _schemas() -> list[dict]:
@@ -236,7 +236,11 @@ def _async_client() -> AsyncOpenAI:
     )
 
 
-async def run_events(messages: list) -> AsyncGenerator[dict, None]:
+async def run_events(
+    messages: list,
+    *,
+    confirm_destructive: Callable[[str, dict], Awaitable[bool]] | None = None,
+) -> AsyncGenerator[dict, None]:
     """Async generator that drives the agentic loop and yields SSE-ready event dicts.
 
     *messages* is the full conversation history (system + prior turns + latest user
@@ -328,9 +332,19 @@ async def run_events(messages: list) -> AsyncGenerator[dict, None]:
             except json.JSONDecodeError:
                 args = {}
 
-            yield {"type": "tool_call", "name": name, "args": args}
-
-            result = await asyncio.to_thread(dispatch, name, args)
+            if name in DESTRUCTIVE_TOOLS and confirm_destructive is not None:
+                # Web confirmation flow: pause, ask the user, then dispatch.
+                yield {"type": "confirmation_required", "name": name, "args": args}
+                allowed = await confirm_destructive(name, args)
+                if allowed:
+                    result = await asyncio.to_thread(
+                        lambda n=name, a=args: dispatch(n, a, skip_confirmation=True)
+                    )
+                else:
+                    result = "Action cancelled by user."
+            else:
+                yield {"type": "tool_call", "name": name, "args": args}
+                result = await asyncio.to_thread(dispatch, name, args)
 
             display = result[:500] + ("…" if len(result) > 500 else "")
             yield {"type": "tool_result", "name": name, "content": display}

@@ -117,11 +117,20 @@ def _check_bash_blacklist(command: str) -> str | None:
     return None
 
 
-def dispatch(tool_name: str, tool_args: dict | str) -> str:
+def dispatch(
+    tool_name: str,
+    tool_args: dict | str,
+    *,
+    skip_confirmation: bool = False,
+) -> str:
     """Call the tool identified by *tool_name* with *tool_args*.
 
     *tool_args* may arrive as a JSON string (model sometimes serialises it).
     Always returns a string suitable for the tool-result message.
+
+    *skip_confirmation* lets callers that have already obtained user consent
+    (e.g. the web UI via an async confirmation flow) bypass the stdin prompt
+    while still enforcing the bash blacklist and path allowlist.
     """
     if isinstance(tool_args, str):
         try:
@@ -141,10 +150,10 @@ def dispatch(tool_name: str, tool_args: dict | str) -> str:
 
     # Human-in-the-loop confirmation for destructive tools
     if tool_name in DESTRUCTIVE_TOOLS:
-        if not _confirm_destructive(tool_name, tool_args):
+        if not skip_confirmation and not _confirm_destructive(tool_name, tool_args):
             return "Action cancelled by user."
 
-        # Bash-specific blacklist (checked after user confirmation)
+        # Bash-specific blacklist (always enforced, even after confirmation)
         if tool_name == "run_bash":
             command = tool_args.get("command", "")
             blacklist_error = _check_bash_blacklist(command)
