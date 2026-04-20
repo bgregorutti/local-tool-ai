@@ -32,14 +32,11 @@ DESTRUCTIVE_TOOLS: frozenset[str] = frozenset(
 )
 
 _DEFAULT_BASH_ALLOWLIST: frozenset[str] = frozenset({
-    "ls", "cat", "head", "tail", "grep", "find", "wc", "echo", "pwd",
-    "date", "uname", "env", "which", "file", "stat", "du", "df",
-    "git", "python", "python3", "pip", "uv", "node", "npm", "make",
-    "cargo", "go", "docker", "tree", "sort", "uniq", "cut", "awk",
-    "sed", "jq", "tar", "zip", "unzip", "curl", "wget", "touch",
-    "mkdir", "cp", "mv", "diff", "patch", "tee", "xargs", "tr",
-    "basename", "dirname", "realpath", "readlink", "test", "true",
-    "false", "yes", "seq", "printf",
+    "ls", "cat", "head", "tail", "grep", "find", "wc", "pwd",
+    "date", "uname", "which", "file", "stat", "du", "df",
+    "python", "python3", "sort", "uniq", "cut", "awk",
+    "sed", "jq", "tar", "zip", "unzip", "touch",
+    "mkdir", "cp", "mv", "diff"
 })
 
 # Dangerous flag patterns still blocked even for allowed commands
@@ -82,6 +79,11 @@ SENSITIVE_PATHS: list[Path] = [
         "~/.gem/credentials",
         "~/.config/git/credentials",
         "~/.git-credentials",
+        "~/.zshrc",
+        "~/.zsh_history",
+        "~/.zsh_sessions",
+        "~/.bashrc",
+        "~/.bash_profile"
     ]
 ]
 

@@ -559,7 +559,7 @@ async function sendMessage() {
 
     if (!res.ok) {
       removeNodeIfEmpty(assistantRow);
-      appendError('Server error ' + res.status);
+      appendError('Server error ' + res.status + ': ' + res.statusText);
       setBusy(false);
       return;
     }
