@@ -21,9 +21,10 @@ def test_timeout():
     assert "timed out" in result.lower()
 
 
-def test_blocked_pattern():
-    result = run(command="rm -rf /")
-    assert "blocked" in result.lower()
+def test_run_executes_directly():
+    """run_bash.run() no longer has its own blocklist — validation is in registry."""
+    result = run(command="echo safe")
+    assert result.strip() == "safe"
 
 
 def test_working_dir(tmp_path):

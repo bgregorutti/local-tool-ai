@@ -35,18 +35,11 @@ SCHEMA: dict = {
 }
 
 MAX_OUTPUT_CHARS = 8_000
-BLOCKED_PATTERNS = [
-    "rm -rf /",
-    "mkfs",
-    ":(){:|:&};:",  # fork bomb
-]
 
 
 def run(command: str, timeout: int = 30, working_dir: str | None = None) -> str:
-    for blocked in BLOCKED_PATTERNS:
-        if blocked in command:
-            return f"Error: command contains a blocked pattern: '{blocked}'."
-
+    # NOTE: command validation (allowlist + dangerous patterns) is enforced
+    # in tools/registry.py dispatch() — single enforcement point.
     try:
         result = subprocess.run(
             command,

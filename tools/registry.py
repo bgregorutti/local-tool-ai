@@ -20,23 +20,37 @@ DESTRUCTIVE_TOOLS: frozenset[str] = frozenset(
     {"write_file", "move_file", "delete_file", "run_bash"}
 )
 
-BASH_BLACKLIST: list[str] = [
-    r"rm\s+-rf",
-    r"rm\s+-f",
-    r"sudo",
-    r"chmod",
-    r"chown",
-    r"mkfs",
+_DEFAULT_BASH_ALLOWLIST: frozenset[str] = frozenset({
+    "ls", "cat", "head", "tail", "grep", "find", "wc", "echo", "pwd",
+    "date", "uname", "env", "which", "file", "stat", "du", "df",
+    "git", "python", "python3", "pip", "uv", "node", "npm", "make",
+    "cargo", "go", "docker", "tree", "sort", "uniq", "cut", "awk",
+    "sed", "jq", "tar", "zip", "unzip", "curl", "wget", "touch",
+    "mkdir", "cp", "mv", "diff", "patch", "tee", "xargs", "tr",
+    "basename", "dirname", "realpath", "readlink", "test", "true",
+    "false", "yes", "seq", "printf",
+})
+
+# Dangerous flag patterns still blocked even for allowed commands
+BASH_DANGEROUS_PATTERNS: list[str] = [
+    r"rm\s+-rf\s+/",
+    r"rm\s+-r\s+-f\s+/",
+    r"rm\s+--recursive\s+--force\s+/",
+    r":\s*\(\)\s*\{.*\}",      # fork bomb
+    r"curl.*\|\s*(sh|bash)",    # remote code execution
+    r"wget.*\|\s*(sh|bash)",
+    r">\s*/dev/sd",
+    r"mkfs\.",
     r"dd\s+if=",
-    r":\s*\(\)\s*\{.*\}",  # fork bomb
-    r"curl.*\|.*sh",        # remote code execution
-    r"wget.*\|.*sh",
-    r"> /dev/",
-    r"shred",
-    r"shutdown",
-    r"reboot",
-    r"kill"
 ]
+
+
+def _get_bash_allowlist() -> frozenset[str]:
+    """Return the bash command allowlist, configurable via BASH_ALLOWLIST env var."""
+    custom = os.environ.get("BASH_ALLOWLIST", "").strip()
+    if custom:
+        return frozenset(c.strip() for c in custom.split(",") if c.strip())
+    return _DEFAULT_BASH_ALLOWLIST
 
 # Sensitive paths that are always denied regardless of ALLOWED_ROOT
 SENSITIVE_PATHS: list[Path] = [
@@ -172,11 +186,39 @@ def _confirm_destructive(tool_name: str, tool_args: dict) -> bool:
     return answer == "y"
 
 
-def _check_bash_blacklist(command: str) -> str | None:
-    """Return an error string if the command matches a blacklisted pattern."""
-    for pattern in BASH_BLACKLIST:
+def _check_bash_command(command: str) -> str | None:
+    """Return an error string if the command is not allowed.
+
+    Two layers:
+    1. Allowlist: extract the first token (base command) and check against permitted commands.
+    2. Dangerous patterns: block known-dangerous flag combinations even on allowed commands.
+    """
+    # Extract first token (the base command), stripping env var assignments
+    stripped = command.strip()
+    # Skip leading env assignments like VAR=val
+    tokens = stripped.split()
+    base_cmd = None
+    for token in tokens:
+        if "=" in token and not token.startswith("-"):
+            continue
+        base_cmd = token
+        break
+
+    if base_cmd is None:
+        return "Error: could not determine command to execute."
+
+    # Resolve to basename (handle /usr/bin/ls etc.)
+    base_cmd = os.path.basename(base_cmd)
+
+    allowlist = _get_bash_allowlist()
+    if base_cmd not in allowlist:
+        return f"Error: command '{base_cmd}' is not in the allowed commands list."
+
+    # Second layer: dangerous patterns
+    for pattern in BASH_DANGEROUS_PATTERNS:
         if re.search(pattern, command):
-            return "Error: command matches a blacklisted pattern and was blocked."
+            return "Error: command matches a dangerous pattern and was blocked."
+
     return None
 
 
@@ -224,12 +266,12 @@ def dispatch(
         if not skip_confirmation and not _confirm_destructive(tool_name, tool_args):
             return "Action cancelled by user."
 
-        # Bash-specific blacklist (always enforced, even after confirmation)
+        # Bash-specific allowlist + dangerous pattern check (always enforced)
         if tool_name == "run_bash":
             command = tool_args.get("command", "")
-            blacklist_error = _check_bash_blacklist(command)
-            if blacklist_error:
-                return blacklist_error
+            bash_error = _check_bash_command(command)
+            if bash_error:
+                return bash_error
 
     # 3. Execute
     try:
