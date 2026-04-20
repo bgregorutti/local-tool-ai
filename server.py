@@ -16,6 +16,7 @@ if _env.exists():
 
 import agent
 from fastapi import FastAPI, Request
+from tools.registry import _allowed_root_is_explicit, _get_allowed_root
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 
 app = FastAPI(title="Local Tool AI")
@@ -23,6 +24,10 @@ app = FastAPI(title="Local Tool AI")
 
 @app.on_event("startup")
 async def _startup() -> None:
+    if not _allowed_root_is_explicit():
+        print(
+            f"⚠️  ALLOWED_ROOT not set — defaulting to cwd: {_get_allowed_root()}"
+        )
     if os.environ.get("BASH_ENABLED") == "1":
         print("⚠️  run_bash is enabled. Only use this in a trusted environment.")
 

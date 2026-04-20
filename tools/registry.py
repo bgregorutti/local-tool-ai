@@ -94,18 +94,25 @@ def get_schemas(safe_mode: bool = False, bash_enabled: bool = False) -> list[dic
     return SCHEMAS
 
 
-def _get_allowed_root() -> Path | None:
+def _allowed_root_is_explicit() -> bool:
+    """Return True if the user explicitly set ALLOWED_ROOT."""
+    return bool(os.environ.get("ALLOWED_ROOT", "").strip())
+
+
+def _get_allowed_root() -> Path:
+    """Return the allowed root directory.
+
+    Falls back to cwd if ALLOWED_ROOT is not explicitly set.
+    """
     val = os.environ.get("ALLOWED_ROOT", "").strip()
     if not val:
-        return None
+        return Path.cwd()
     return Path(val).expanduser().resolve()
 
 
 def _check_path_allowlist(tool_name: str, tool_args: dict) -> str | None:
     """Return an error string if the tool's path argument is outside ALLOWED_ROOT."""
     allowed_root = _get_allowed_root()
-    if allowed_root is None:
-        return None
 
     path_arg = _PATH_ARG.get(tool_name)
     if path_arg is None:

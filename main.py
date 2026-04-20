@@ -16,6 +16,7 @@ from prompt_toolkit.history import FileHistory
 from rich.console import Console
 
 import agent
+from tools.registry import _allowed_root_is_explicit, _get_allowed_root
 
 app = typer.Typer(
     name="local-tool-ai",
@@ -62,6 +63,11 @@ def main(
 
     if model:
         os.environ["LM_STUDIO_MODEL"] = model
+
+    if not _allowed_root_is_explicit():
+        console.print(
+            f"[yellow]Warning: ALLOWED_ROOT not set — defaulting to cwd: {_get_allowed_root()}[/]"
+        )
 
     if repl or not query:
         _run_repl(system=system, verbose=not quiet)
