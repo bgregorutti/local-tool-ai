@@ -14,12 +14,32 @@ if _env.exists():
 
     load_dotenv(_env)
 
+import hmac
+
 import agent
 from fastapi import FastAPI, Request
-from tools.registry import _allowed_root_is_explicit, _get_allowed_root
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from tools.registry import _allowed_root_is_explicit, _get_allowed_root
 
 app = FastAPI(title="Local Tool AI")
+
+_AUTH_TOKEN: str | None = os.environ.get("WEB_AUTH_TOKEN", "").strip() or None
+
+# Routes that skip auth (public endpoints)
+_PUBLIC_ROUTES: frozenset[str] = frozenset({"/", "/info"})
+
+
+@app.middleware("http")
+async def _auth_middleware(request: Request, call_next):
+    """Require Bearer token on protected routes when WEB_AUTH_TOKEN is set."""
+    if _AUTH_TOKEN and request.url.path not in _PUBLIC_ROUTES:
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return JSONResponse({"error": "unauthorized"}, status_code=401)
+        token = auth_header[len("Bearer "):]
+        if not hmac.compare_digest(token, _AUTH_TOKEN):
+            return JSONResponse({"error": "unauthorized"}, status_code=401)
+    return await call_next(request)
 
 
 @app.on_event("startup")
@@ -28,6 +48,10 @@ async def _startup() -> None:
         print(
             f"⚠️  ALLOWED_ROOT not set — defaulting to cwd: {_get_allowed_root()}"
         )
+    if _AUTH_TOKEN:
+        print("🔒 Authentication enabled (WEB_AUTH_TOKEN is set).")
+    else:
+        print("⚠️  No WEB_AUTH_TOKEN set — web server has no authentication.")
     if os.environ.get("BASH_ENABLED") == "1":
         print("⚠️  run_bash is enabled. Only use this in a trusted environment.")
 

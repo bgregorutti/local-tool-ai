@@ -426,6 +426,13 @@ body {
     <div class="st-total" id="st-total">0</div>
     <div class="st-detail" id="st-detail">↑ 0 prompt &nbsp;↓ 0 completion</div>
   </div>
+  <div id="auth-section" style="font-size:11px;">
+    <div class="st-label">Auth token</div>
+    <input type="password" id="auth-token"
+      placeholder="WEB_AUTH_TOKEN (if set)"
+      style="width:100%;background:#1b1b1b;border:1px solid #252525;border-radius:5px;padding:5px 8px;color:#e0e0e0;font-size:11px;outline:none;"
+      oninput="localStorage.setItem('ltai-token',this.value)">
+  </div>
   <button id="new-chat-btn" onclick="newChat()">+ New conversation</button>
 </div>
 
@@ -477,6 +484,17 @@ function resetSessionTokens() {
   document.getElementById('st-detail').innerHTML  = '↑ 0 prompt &nbsp;↓ 0 completion';
 }
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const authInput = document.getElementById('auth-token');
+authInput.value = localStorage.getItem('ltai-token') || '';
+
+function authHeaders() {
+  const token = authInput.value.trim();
+  const h = { 'X-Session-ID': sessionId };
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  return h;
+}
+
 // ── Model info ────────────────────────────────────────────────────────────────
 fetch('/info')
   .then(r => r.json())
@@ -504,7 +522,7 @@ function resizeInput() {
 async function newChat() {
   await fetch('/reset', {
     method: 'POST',
-    headers: { 'X-Session-ID': sessionId },
+    headers: authHeaders(),
   }).catch(() => {});
 
   resetSessionTokens();
@@ -535,7 +553,7 @@ async function sendMessage() {
   try {
     const res = await fetch('/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Session-ID': sessionId },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ message: text }),
     });
 
@@ -746,7 +764,7 @@ async function sendConfirm(allowed, card) {
 
   await fetch('/confirm', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Session-ID': sessionId },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ allowed }),
   }).catch(() => {});
 }
