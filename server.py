@@ -123,14 +123,28 @@ def run() -> None:
         help="Enable run_bash tool (trusted environments only).",
     )
     parser.add_argument("--port", type=int, default=None, help="Port to listen on.")
+    parser.add_argument(
+        "--host",
+        type=str,
+        default=None,
+        help="Host to bind to (default: 127.0.0.1). Use 0.0.0.0 to expose on all interfaces.",
+    )
     parsed = parser.parse_args()
 
     if parsed.enable_bash:
         os.environ["BASH_ENABLED"] = "1"
         print("⚠️  run_bash is enabled. Only use this in a trusted environment.")
 
+    host = parsed.host or os.environ.get("WEB_HOST", "127.0.0.1")
     port = parsed.port or int(os.environ.get("WEB_PORT", "7860"))
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+
+    if host != "127.0.0.1":
+        print(
+            f"⚠️  Server binding to {host} — accessible beyond localhost. "
+            "Consider adding authentication (WEB_AUTH_TOKEN)."
+        )
+
+    uvicorn.run(app, host=host, port=port, log_level="info")
 
 
 if __name__ == "__main__":

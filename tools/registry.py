@@ -12,7 +12,7 @@ from tools import git, list_folder, read_docx, read_file, read_pdf, run_bash, se
 
 # Tool tier classification
 READONLY_TOOLS: frozenset[str] = frozenset({
-    "search_files", "list_folder", "read_file", "read_pdf", "read_docx"
+    "search_files", "list_folder", "read_file", "read_pdf", "read_docx",
     "git_status", "git_log", "git_tags", "git_show",
 })
 
