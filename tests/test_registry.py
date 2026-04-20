@@ -7,7 +7,7 @@ def test_schemas_list_has_all_tools():
     names = {s["function"]["name"] for s in SCHEMAS}
     assert names == {
         "search_files", "list_folder", "read_file", "run_bash",
-        "git_status", "git_log", "git_tags", "git_show",
+        "git_status", "git_log", "git_tags", "git_show", "read_pdf", "read_docx"
     }
 
 

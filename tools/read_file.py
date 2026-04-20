@@ -9,10 +9,13 @@ SCHEMA: dict = {
     "function": {
         "name": "read_file",
         "description": (
-            "Read and return the text content of a file. "
-            "USE THIS instead of run_bash when the goal is to read or inspect a file. "
+            "Read and return the text content of a plain text file. "
+            "USE THIS instead of run_bash when the goal is to read or inspect a text file. "
+            "Do NOT use this for PDF files — use read_pdf instead. "
+            "Do NOT use this for .docx files — use read_docx instead. "
+            "Do NOT use run_bash (e.g. cat, head, tail) for this purpose. "
             "Optionally restrict to a line range. "
-            "Do NOT use run_bash (e.g. cat, head, tail) for this purpose."
+            "Read-only operation — no changes are made to the file."
         ),
         "parameters": {
             "type": "object",
