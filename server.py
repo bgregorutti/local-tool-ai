@@ -63,11 +63,40 @@ async def _startup() -> None:
         print("⚠️  run_bash is enabled. Only use this in a trusted environment.")
 
 
-# In-memory session store: session_id -> message list (includes system message)
-_sessions: dict[str, list] = {}
+# Session limits
+_MAX_SESSIONS = int(os.environ.get("MAX_SESSIONS", "100"))
+_MAX_MESSAGES_PER_SESSION = int(os.environ.get("MAX_MESSAGES_PER_SESSION", "200"))
+
+# In-memory session store: session_id -> {"messages": list, "last_active": float}
+_sessions: dict[str, dict] = {}
 
 # Pending web-based confirmation futures: session_id -> Future[bool]
 _pending_confirmations: dict[str, asyncio.Future] = {}
+
+
+def _get_or_create_session(session_id: str) -> list:
+    """Get or create a session, enforcing max sessions via LRU eviction."""
+    if session_id in _sessions:
+        _sessions[session_id]["last_active"] = time.monotonic()
+        return _sessions[session_id]["messages"]
+
+    # Evict oldest sessions if at capacity
+    while len(_sessions) >= _MAX_SESSIONS:
+        oldest_id = min(_sessions, key=lambda k: _sessions[k]["last_active"])
+        del _sessions[oldest_id]
+
+    _sessions[session_id] = {
+        "messages": [{"role": "system", "content": agent.DEFAULT_SYSTEM}],
+        "last_active": time.monotonic(),
+    }
+    return _sessions[session_id]["messages"]
+
+
+def _trim_messages(messages: list) -> None:
+    """Drop oldest non-system messages if over the cap."""
+    while len(messages) > _MAX_MESSAGES_PER_SESSION:
+        # Keep the system message at index 0, remove the oldest after it
+        messages.pop(1)
 
 _STATIC = Path(__file__).parent / "static"
 
@@ -110,11 +139,9 @@ async def chat(request: Request) -> StreamingResponse:
     if not user_message:
         return JSONResponse({"error": "empty message"}, status_code=400)
 
-    if session_id not in _sessions:
-        _sessions[session_id] = [{"role": "system", "content": agent.DEFAULT_SYSTEM}]
-
-    messages = _sessions[session_id]
+    messages = _get_or_create_session(session_id)
     messages.append({"role": "user", "content": user_message})
+    _trim_messages(messages)
 
     async def confirm_destructive(tool_name: str, args: dict) -> bool:  # noqa: ARG001
         """Create a Future, store it, and wait for /confirm to resolve it."""
@@ -161,8 +188,8 @@ async def confirm(request: Request) -> JSONResponse:
 @app.post("/reset")
 async def reset(request: Request) -> JSONResponse:
     session_id = request.headers.get("X-Session-ID")
-    if session_id and session_id in _sessions:
-        del _sessions[session_id]
+    if session_id:
+        _sessions.pop(session_id, None)
     return JSONResponse({"ok": True})
 
 
