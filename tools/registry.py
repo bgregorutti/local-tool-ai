@@ -8,10 +8,13 @@ import re
 import sys
 from pathlib import Path
 
-from tools import list_folder, read_file, run_bash, search_files
+from tools import git, list_folder, read_file, run_bash, search_files
 
 # Tool tier classification
-READONLY_TOOLS: frozenset[str] = frozenset({"search_files", "list_folder", "read_file"})
+READONLY_TOOLS: frozenset[str] = frozenset({
+    "search_files", "list_folder", "read_file",
+    "git_status", "git_log", "git_tags", "git_show",
+})
 DESTRUCTIVE_TOOLS: frozenset[str] = frozenset(
     {"write_file", "move_file", "delete_file", "run_bash"}
 )
@@ -38,12 +41,17 @@ _PATH_ARG: dict[str, str] = {
     "search_files": "root",
     "list_folder": "path",
     "read_file": "path",
+    "git_status": "repo_path",
+    "git_log": "repo_path",
+    "git_tags": "repo_path",
+    "git_show": "repo_path",
 }
 
 READONLY_SCHEMAS: list[dict] = [
     search_files.SCHEMA,
     list_folder.SCHEMA,
     read_file.SCHEMA,
+    *git.SCHEMAS,
 ]
 
 DESTRUCTIVE_SCHEMAS: list[dict] = [
@@ -58,6 +66,10 @@ _HANDLERS: dict[str, callable] = {
     "list_folder": list_folder.run,
     "read_file": read_file.run,
     "run_bash": run_bash.run,
+    "git_status": git.run_status,
+    "git_log": git.run_log,
+    "git_tags": git.run_tags,
+    "git_show": git.run_show,
 }
 
 
