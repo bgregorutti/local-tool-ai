@@ -38,6 +38,28 @@ BASH_BLACKLIST: list[str] = [
     r"kill"
 ]
 
+# Sensitive paths that are always denied regardless of ALLOWED_ROOT
+SENSITIVE_PATHS: list[Path] = [
+    Path(p).expanduser().resolve()
+    for p in [
+        "~/.ssh",
+        "~/.gnupg",
+        "~/.gpg",
+        "~/.aws",
+        "~/.config/gh",
+        "~/.config/gcloud",
+        "~/.azure",
+        "~/.kube",
+        "~/.docker/config.json",
+        "~/.netrc",
+        "~/.npmrc",
+        "~/.pypirc",
+        "~/.gem/credentials",
+        "~/.config/git/credentials",
+        "~/.git-credentials",
+    ]
+]
+
 # Maps tool name → the argument that carries a filesystem path
 _PATH_ARG: dict[str, str] = {
     "search_files": "root",
@@ -120,6 +142,12 @@ def _check_path_allowlist(tool_name: str, tool_args: dict) -> str | None:
 
     raw_path = tool_args.get(path_arg, ".")
     target = Path(raw_path).expanduser().resolve()
+
+    # Always deny sensitive paths
+    for sensitive in SENSITIVE_PATHS:
+        if target == sensitive or target.is_relative_to(sensitive):
+            return "Error: access to sensitive path is denied."
+
     if not target.is_relative_to(allowed_root):
         return "Error: path is outside the allowed working directory."
     return None
