@@ -31,6 +31,7 @@ BASH_BLACKLIST: list[str] = [
     r"shred",
     r"shutdown",
     r"reboot",
+    r"kill"
 ]
 
 # Maps tool name → the argument that carries a filesystem path
