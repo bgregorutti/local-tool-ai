@@ -4,5 +4,6 @@ __pycache__/
 .venv/
 .ruff_cache/
 .pytest_cache/
+.agent_history
 dist/
 *.egg-info/

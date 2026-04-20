@@ -11,8 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import typer
+from prompt_toolkit import prompt as pt_prompt
+from prompt_toolkit.history import FileHistory
 from rich.console import Console
-from rich.prompt import Prompt
 
 import agent
 
@@ -75,7 +76,7 @@ def _run_repl(system: str, verbose: bool) -> None:
     )
     while True:
         try:
-            query = Prompt.ask("[bold cyan]>[/]")
+            query = pt_prompt("You: ", history=FileHistory(".agent_history"))
         except (KeyboardInterrupt, EOFError):
             console.print("\nBye!")
             sys.exit(0)
