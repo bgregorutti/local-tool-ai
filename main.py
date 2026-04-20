@@ -76,7 +76,7 @@ def _run_repl(system: str, verbose: bool) -> None:
     )
     while True:
         try:
-            query = pt_prompt("You: ", history=FileHistory(".agent_history"))
+            query = pt_prompt(">: ", history=FileHistory(".agent_history"))
         except (KeyboardInterrupt, EOFError):
             console.print("\nBye!")
             sys.exit(0)
