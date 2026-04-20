@@ -5,7 +5,9 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import time
 import uuid
+from collections import defaultdict
 from pathlib import Path
 
 _env = Path(__file__).parent / ".env"
@@ -27,6 +29,11 @@ _AUTH_TOKEN: str | None = os.environ.get("WEB_AUTH_TOKEN", "").strip() or None
 
 # Routes that skip auth (public endpoints)
 _PUBLIC_ROUTES: frozenset[str] = frozenset({"/", "/info"})
+
+# Rate limiting: per-session request timestamps
+_RATE_LIMIT_MAX = int(os.environ.get("RATE_LIMIT_MAX", "20"))  # max requests per window
+_RATE_LIMIT_WINDOW = 60  # seconds
+_rate_limits: dict[str, list[float]] = defaultdict(list)
 
 
 @app.middleware("http")
@@ -75,9 +82,28 @@ async def info() -> JSONResponse:
     return JSONResponse({"model": os.environ.get("LM_STUDIO_MODEL", "unknown")})
 
 
+def _check_rate_limit(session_id: str) -> bool:
+    """Return True if the session is within rate limits."""
+    now = time.monotonic()
+    timestamps = _rate_limits[session_id]
+    # Prune old entries
+    cutoff = now - _RATE_LIMIT_WINDOW
+    _rate_limits[session_id] = [t for t in timestamps if t > cutoff]
+    if len(_rate_limits[session_id]) >= _RATE_LIMIT_MAX:
+        return False
+    _rate_limits[session_id].append(now)
+    return True
+
+
 @app.post("/chat")
 async def chat(request: Request) -> StreamingResponse:
     session_id = request.headers.get("X-Session-ID") or str(uuid.uuid4())
+
+    if not _check_rate_limit(session_id):
+        return JSONResponse(
+            {"error": f"rate limit exceeded ({_RATE_LIMIT_MAX} requests/minute)"},
+            status_code=429,
+        )
 
     body = await request.json()
     user_message: str = body.get("message", "").strip()

@@ -7,3 +7,4 @@ __pycache__/
 .agent_history
 dist/
 *.egg-info/
+agent_audit.log

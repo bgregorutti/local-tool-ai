@@ -3,12 +3,23 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import sys
 from pathlib import Path
 
 from tools import git, list_folder, read_docx, read_file, read_pdf, run_bash, search_files
+
+# Audit logger — writes to agent_audit.log
+_audit_logger = logging.getLogger("agent_audit")
+_audit_logger.setLevel(logging.INFO)
+_audit_handler = logging.FileHandler("agent_audit.log")
+_audit_handler.setFormatter(
+    logging.Formatter("%(asctime)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S")
+)
+_audit_logger.addHandler(_audit_handler)
+_audit_logger.propagate = False
 
 # Tool tier classification
 READONLY_TOOLS: frozenset[str] = frozenset({
@@ -274,7 +285,16 @@ def dispatch(
                 return bash_error
 
     # 3. Execute
+    args_summary = json.dumps(tool_args, default=str)
+    if len(args_summary) > 200:
+        args_summary = args_summary[:200] + "…"
+    _audit_logger.info("DISPATCH tool=%s args=%s", tool_name, args_summary)
     try:
-        return handler(**tool_args)
+        result = handler(**tool_args)
+        _audit_logger.info(
+            "RESULT tool=%s status=ok length=%d", tool_name, len(result)
+        )
+        return result
     except TypeError as exc:
+        _audit_logger.info("RESULT tool=%s status=error error=%s", tool_name, exc)
         return f"Error: bad arguments for '{tool_name}': {exc}"
