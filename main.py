@@ -98,5 +98,9 @@ def _run_repl(system: str, verbose: bool) -> None:
         console.print()
 
 
+def run():
+    app()
+
+
 if __name__ == "__main__":
     app()

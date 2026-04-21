@@ -16,8 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-main = "main:app"
-server = "server:run"
+ai-agent = "local_tool_ai.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -30,6 +29,7 @@ include = [
     "/server.py",
     "/tools",
     "/static",
+    "/local_tool_ai",
 ]
 
 [dependency-groups]
