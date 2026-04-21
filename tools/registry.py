@@ -24,7 +24,7 @@ _audit_logger.propagate = False
 # Tool tier classification
 READONLY_TOOLS: frozenset[str] = frozenset({
     "search_files", "list_folder", "read_file", "read_pdf", "read_docx",
-    "git_status", "git_log", "git_tags", "git_show",
+    "git_status", "git_log", "git_tags", "git_show", "git_diff"
 })
 
 DESTRUCTIVE_TOOLS: frozenset[str] = frozenset(
@@ -96,6 +96,7 @@ _PATH_ARG: dict[str, str] = {
     "git_log": "repo_path",
     "git_tags": "repo_path",
     "git_show": "repo_path",
+    "git_diff": "repo_path",
     "read_pdf": "file_path",
     "read_docx": "file_path",
 }
@@ -127,6 +128,7 @@ _HANDLERS: dict[str, callable] = {
     "git_log": git.run_log,
     "git_tags": git.run_tags,
     "git_show": git.run_show,
+    "git_diff": git.run_diff
 }
 
 

@@ -34,6 +34,29 @@ SCHEMA_STATUS: dict = {
     },
 }
 
+SCHEMA_DIFF: dict = {
+    "type": "function",
+    "function": {
+        "name": "git_diff",
+        "description": (
+            "Return changes between the working tree and the index or a tree, changes between the index and a tree, changes between two trees, changes resulting from a merge, changes between two blob objects, or changes between two files on disk. "
+            "USE THIS instead of run_bash when the goal is to compare two states of files. "
+            "Do NOT use run_bash (e.g. git diff) for this purpose. "
+            "Read-only operation — no changes are made to the repository."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "repo_path": {
+                    "type": "string",
+                    "description": "Absolute path to the Git repository root.",
+                },
+            },
+            "required": ["repo_path"],
+        },
+    },
+}
+
 SCHEMA_LOG: dict = {
     "type": "function",
     "function": {
@@ -112,7 +135,7 @@ SCHEMA_SHOW: dict = {
     },
 }
 
-SCHEMAS: list[dict] = [SCHEMA_STATUS, SCHEMA_LOG, SCHEMA_TAGS, SCHEMA_SHOW]
+SCHEMAS: list[dict] = [SCHEMA_STATUS, SCHEMA_LOG, SCHEMA_TAGS, SCHEMA_SHOW, SCHEMA_DIFF]
 
 
 def _run_git(args: list[str], repo_path: str) -> str:
@@ -138,6 +161,9 @@ def _run_git(args: list[str], repo_path: str) -> str:
 
 def run_status(repo_path: str) -> str:
     return _run_git(["status"], repo_path)
+
+def run_diff(repo_path: str) -> str:
+    return _run_git(["diff"], repo_path)
 
 
 def run_log(repo_path: str, max_count: int = 20) -> str:
