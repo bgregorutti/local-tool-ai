@@ -9,7 +9,15 @@ import re
 import sys
 from pathlib import Path
 
-from tools import git, list_folder, read_docx, read_file, read_pdf, run_bash, search_files
+from local_tool_ai.tools import (
+    git,
+    list_folder,
+    read_docx,
+    read_file,
+    read_pdf,
+    run_bash,
+    search_files,
+)
 
 # Audit logger — writes to agent_audit.log
 _audit_logger = logging.getLogger("agent_audit")

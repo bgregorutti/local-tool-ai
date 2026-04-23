@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from tools.list_folder import run
+from local_tool_ai.tools.list_folder import run
 
 
 def test_lists_files_and_dirs():

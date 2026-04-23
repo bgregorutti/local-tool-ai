@@ -1,8 +1,10 @@
 """FastAPI web server: chat UI with SSE streaming and per-session history."""
+# ruff: noqa: E402 — load_dotenv must run before subsequent imports read env vars
 
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import os
 import time
@@ -10,18 +12,16 @@ import uuid
 from collections import defaultdict
 from pathlib import Path
 
-_env = Path(__file__).parent / ".env"
-if _env.exists():
-    from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv(_env)
+load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(Path.home() / ".config" / "local-tool-ai" / ".env", override=False)
 
-import hmac
-
-import agent
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
-from tools.registry import _allowed_root_is_explicit, _get_allowed_root
+
+from local_tool_ai import agent
+from local_tool_ai.tools.registry import _allowed_root_is_explicit, _get_allowed_root
 
 app = FastAPI(title="Local Tool AI")
 

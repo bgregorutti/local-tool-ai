@@ -14,7 +14,7 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.text import Text
 
-from tools.registry import DESTRUCTIVE_TOOLS, dispatch, get_schemas
+from local_tool_ai.tools.registry import DESTRUCTIVE_TOOLS, dispatch, get_schemas
 
 
 def _bash_enabled() -> bool:

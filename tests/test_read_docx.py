@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tools.read_docx import run
+from local_tool_ai.tools.read_docx import run
 
 
 def _make_mock_doc(paragraphs: list[str]):
@@ -41,7 +41,7 @@ def test_corrupt_file_returns_error():
 
 def test_path_outside_allowed_root_is_blocked(monkeypatch, tmp_path):
     monkeypatch.setenv("ALLOWED_ROOT", str(tmp_path))
-    from tools.registry import dispatch
+    from local_tool_ai.tools.registry import dispatch
 
     result = dispatch("read_docx", {"file_path": "/etc/passwd"})
     assert "outside" in result.lower()
@@ -50,7 +50,7 @@ def test_path_outside_allowed_root_is_blocked(monkeypatch, tmp_path):
 def test_path_inside_allowed_root_proceeds(monkeypatch, tmp_path):
     monkeypatch.setenv("ALLOWED_ROOT", str(tmp_path))
     docx_path = str(tmp_path / "doc.docx")
-    from tools.registry import dispatch
+    from local_tool_ai.tools.registry import dispatch
 
     mock_doc = _make_mock_doc(["Paragraph one", "Paragraph two"])
     with patch("docx.Document", return_value=mock_doc):

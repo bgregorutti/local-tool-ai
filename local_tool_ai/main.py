@@ -1,4 +1,5 @@
 """CLI entry point for the local tool-calling agent."""
+# ruff: noqa: E402 — load_dotenv must run before subsequent imports read env vars
 
 from __future__ import annotations
 
@@ -6,17 +7,18 @@ import os
 import sys
 from pathlib import Path
 
-# Load .env before importing anything that reads env vars
-from dotenv import load_dotenv
-load_dotenv()
+from dotenv import find_dotenv, load_dotenv
+
+load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(Path.home() / ".config" / "local-tool-ai" / ".env", override=False)
 
 import typer
 from prompt_toolkit import prompt as pt_prompt
 from prompt_toolkit.history import FileHistory
 from rich.console import Console
 
-import agent
-from tools.registry import _allowed_root_is_explicit, _get_allowed_root
+from local_tool_ai import agent
+from local_tool_ai.tools.registry import _allowed_root_is_explicit, _get_allowed_root
 
 app = typer.Typer(
     name="local-tool-ai",
@@ -96,6 +98,10 @@ def _run_repl(system: str, verbose: bool) -> None:
 
         agent.run(query, system=system, verbose=verbose)
         console.print()
+
+
+def run():
+    app()
 
 
 if __name__ == "__main__":

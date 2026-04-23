@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tools.read_pdf import run
+from local_tool_ai.tools.read_pdf import run
 
 
 def test_valid_pdf_returns_markdown():
@@ -34,7 +34,7 @@ def test_corrupt_file_returns_error():
 
 def test_path_outside_allowed_root_is_blocked(monkeypatch, tmp_path):
     monkeypatch.setenv("ALLOWED_ROOT", str(tmp_path))
-    from tools.registry import dispatch
+    from local_tool_ai.tools.registry import dispatch
 
     result = dispatch("read_pdf", {"file_path": "/etc/passwd"})
     assert "outside" in result.lower()
@@ -43,7 +43,7 @@ def test_path_outside_allowed_root_is_blocked(monkeypatch, tmp_path):
 def test_path_inside_allowed_root_proceeds(monkeypatch, tmp_path):
     monkeypatch.setenv("ALLOWED_ROOT", str(tmp_path))
     pdf_path = str(tmp_path / "doc.pdf")
-    from tools.registry import dispatch
+    from local_tool_ai.tools.registry import dispatch
 
     with patch("pymupdf4llm.to_markdown", return_value="Hello PDF"):
         result = dispatch("read_pdf", {"file_path": pdf_path})
