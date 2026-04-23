@@ -17,8 +17,6 @@ dependencies = [
 
 [project.scripts]
 ai-agent = "local_tool_ai.cli:main"
-main = "local_tool_ai.main:run"
-server = "local_tool_ai.server:run"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,8 +1,10 @@
 """FastAPI web server: chat UI with SSE streaming and per-session history."""
+# ruff: noqa: E402 — load_dotenv must run before subsequent imports read env vars
 
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import os
 import time
@@ -10,11 +12,9 @@ import uuid
 from collections import defaultdict
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
-load_dotenv()
-
-import hmac
+load_dotenv(find_dotenv(usecwd=True))
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse

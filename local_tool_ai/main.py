@@ -1,14 +1,14 @@
 """CLI entry point for the local tool-calling agent."""
+# ruff: noqa: E402 — load_dotenv must run before subsequent imports read env vars
 
 from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
 
-# Load .env before importing anything that reads env vars
-from dotenv import load_dotenv
-load_dotenv()
+from dotenv import find_dotenv, load_dotenv
+
+load_dotenv(find_dotenv(usecwd=True))
 
 import typer
 from prompt_toolkit import prompt as pt_prompt
