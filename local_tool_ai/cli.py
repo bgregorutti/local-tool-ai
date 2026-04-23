@@ -28,10 +28,10 @@ def main():
     sys.argv = [sys.argv[0]] + remaining
 
     if args.target == "tui":
-        from main import run as run_tui
+        from local_tool_ai.main import run as run_tui
 
         run_tui()
     else:
-        from server import run as run_server
+        from local_tool_ai.server import run as run_server
 
         run_server()

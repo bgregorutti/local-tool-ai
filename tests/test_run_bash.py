@@ -1,4 +1,4 @@
-from tools.run_bash import run
+from local_tool_ai.tools.run_bash import run
 
 
 def test_simple_command():

@@ -24,18 +24,24 @@ LM_STUDIO_API_KEY=lm-studio            # arbitrary, LM Studio ignores it
 ## Project Layout
 ```
 local-tool-ai/
-├── agent.py          # Core agentic loop (CLI) + run_events async generator (web)
-├── main.py           # CLI entry point
-├── server.py         # FastAPI web server (SSE streaming, session history)
-├── static/
-│   └── index.html    # Web chat UI (self-contained HTML/CSS/JS)
-├── tools/
+├── local_tool_ai/
 │   ├── __init__.py
-│   ├── registry.py   # Schema export + dispatch(name, args)
-│   ├── search_files.py
-│   ├── list_folder.py
-│   ├── read_file.py
-│   └── run_bash.py
+│   ├── cli.py          # `ai-agent [tui|gui]` dispatcher (sets ALLOWED_ROOT=cwd)
+│   ├── agent.py        # Core agentic loop (CLI) + run_events async generator (web)
+│   ├── main.py         # TUI entry point (typer)
+│   ├── server.py       # FastAPI web server (SSE streaming, session history)
+│   ├── static/
+│   │   └── index.html  # Web chat UI (self-contained HTML/CSS/JS)
+│   └── tools/
+│       ├── __init__.py
+│       ├── registry.py # Schema export + dispatch(name, args)
+│       ├── search_files.py
+│       ├── list_folder.py
+│       ├── read_file.py
+│       ├── read_pdf.py
+│       ├── read_docx.py
+│       ├── git.py
+│       └── run_bash.py
 ├── tests/
 │   ├── __init__.py
 │   ├── test_search_files.py
@@ -48,10 +54,10 @@ local-tool-ai/
 ```
 
 ## Conventions
-- One file per tool under `tools/`. Each file exports:
+- One file per tool under `local_tool_ai/tools/`. Each file exports:
   - `SCHEMA: dict` — the OpenAI tool JSON schema
   - `run(**kwargs) -> str` — the implementation (always returns a string)
-- `tools/registry.py` aggregates all schemas and provides `dispatch(name, args)`
+- `local_tool_ai/tools/registry.py` aggregates all schemas and provides `dispatch(name, args)`
 - `agent.py` is model-agnostic; all LM Studio config comes from env vars
 - Max agent iterations: 20 (configurable via `MAX_ITERATIONS` env var)
 - Tool output is truncated to 8 000 chars before being fed back to the model
@@ -59,17 +65,18 @@ local-tool-ai/
 
 ## Running
 
-**CLI:**
+**Global (after `uv tool install .`):**
 ```bash
-uv run main.py "list the files in the current directory"
-uv run main.py --repl          # interactive mode
+ai-agent              # TUI, scoped to cwd (ALLOWED_ROOT=$PWD)
+ai-agent gui          # Web UI, scoped to cwd
 ```
 
-**Web UI:**
+**Dev (from repo):**
 ```bash
-uv run server.py               # serves on http://localhost:7860
-# or
-uvicorn server:app --reload    # dev mode with auto-reload
+uv run main "list the files in the current directory"
+uv run main --repl                 # interactive mode
+uv run server                      # web UI on http://localhost:7860
+uvicorn local_tool_ai.server:app --reload   # dev mode with auto-reload
 ```
 
 ## Testing

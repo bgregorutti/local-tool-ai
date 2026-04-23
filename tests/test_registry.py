@@ -1,6 +1,6 @@
 import json
 
-from tools.registry import DESTRUCTIVE_TOOLS, READONLY_TOOLS, SCHEMAS, dispatch, get_schemas
+from local_tool_ai.tools.registry import DESTRUCTIVE_TOOLS, READONLY_TOOLS, SCHEMAS, dispatch, get_schemas
 
 
 def test_schemas_list_has_all_tools():

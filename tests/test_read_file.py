@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from tools.read_file import run, MAX_CHARS
+from local_tool_ai.tools.read_file import run, MAX_CHARS
 
 
 def test_reads_full_file():

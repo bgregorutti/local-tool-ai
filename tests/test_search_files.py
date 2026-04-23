@@ -2,7 +2,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from tools.search_files import run
+from local_tool_ai.tools.search_files import run
 
 
 def _make_tree(base: Path) -> None:

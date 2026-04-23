@@ -15,8 +15,8 @@ from prompt_toolkit import prompt as pt_prompt
 from prompt_toolkit.history import FileHistory
 from rich.console import Console
 
-import agent
-from tools.registry import _allowed_root_is_explicit, _get_allowed_root
+from local_tool_ai import agent
+from local_tool_ai.tools.registry import _allowed_root_is_explicit, _get_allowed_root
 
 app = typer.Typer(
     name="local-tool-ai",

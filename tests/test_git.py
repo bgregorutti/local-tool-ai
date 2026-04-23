@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from tools.git import run_log, run_show, run_status, run_tags
-from tools.registry import dispatch, READONLY_TOOLS
+from local_tool_ai.tools.git import run_log, run_show, run_status, run_tags
+from local_tool_ai.tools.registry import dispatch, READONLY_TOOLS
 
 
 # ---------------------------------------------------------------------------

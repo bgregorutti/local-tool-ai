@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from tools.registry import _check_path_allowlist
+from local_tool_ai.tools.registry import _check_path_allowlist
 
 
 def test_ssh_dir_is_denied(monkeypatch):

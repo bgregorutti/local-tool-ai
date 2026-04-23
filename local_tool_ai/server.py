@@ -10,18 +10,17 @@ import uuid
 from collections import defaultdict
 from pathlib import Path
 
-_env = Path(__file__).parent / ".env"
-if _env.exists():
-    from dotenv import load_dotenv
+from dotenv import load_dotenv
 
-    load_dotenv(_env)
+load_dotenv()
 
 import hmac
 
-import agent
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
-from tools.registry import _allowed_root_is_explicit, _get_allowed_root
+
+from local_tool_ai import agent
+from local_tool_ai.tools.registry import _allowed_root_is_explicit, _get_allowed_root
 
 app = FastAPI(title="Local Tool AI")
 
