@@ -19,20 +19,28 @@ uv sync
 
 ## Install globally (recommended)
 
-Install `ai-agent` as a global command, usable from any directory:
-
 ```bash
 uv tool install .
+ai-agent init        # one-time: creates ~/.config/local-tool-ai/.env with a generated auth token
 ```
 
 Then, from any folder:
 
 ```bash
-ai-agent            # TUI mode, scoped to the current directory
-ai-agent gui        # Web UI, scoped to the current directory
+ai-agent             # TUI mode, scoped to the current directory
+ai-agent gui         # Web UI, scoped to the current directory
 ```
 
 `ai-agent` automatically sets `ALLOWED_ROOT` to your current working directory so the agent can only read/search inside it (Claude-Code-style scoping).
+
+### Config lookup order
+
+Both entrypoints load `.env` from, in order (earlier wins):
+
+1. `$PWD/.env` (or any ancestor) — per-project config
+2. `~/.config/local-tool-ai/.env` — user-global config (populated by `ai-agent init`)
+
+You can override `LM_STUDIO_MODEL`, `WEB_AUTH_TOKEN`, etc. per project by dropping a `.env` next to your code.
 
 ## Web UI
 

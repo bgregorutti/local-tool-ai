@@ -1,4 +1,4 @@
-"""CLI dispatcher: routes 'ai-agent [tui|gui]' to the appropriate entry point."""
+"""CLI dispatcher: routes 'ai-agent [tui|gui|init]' to the appropriate entry point."""
 
 from __future__ import annotations
 
@@ -17,10 +17,16 @@ def main():
         "target",
         nargs="?",
         default="tui",
-        choices=["tui", "gui"],
-        help="Interface to launch (default: tui)",
+        choices=["tui", "gui", "init"],
+        help="tui (default) / gui (web UI) / init (one-time user-config setup)",
     )
     args, remaining = parser.parse_known_args()
+
+    if args.target == "init":
+        from local_tool_ai.init import run as run_init
+
+        run_init()
+        return
 
     os.environ["ALLOWED_ROOT"] = str(Path.cwd().resolve())
 

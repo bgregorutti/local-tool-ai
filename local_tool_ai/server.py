@@ -15,6 +15,7 @@ from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(Path.home() / ".config" / "local-tool-ai" / ".env", override=False)
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
