@@ -134,7 +134,7 @@ body {
 }
 
 .msg-row.user      { justify-content: flex-end; }
-.msg-row.assistant { justify-content: flex-start; }
+.msg-row.assistant { flex-direction: column; align-items: flex-start; }
 
 .bubble {
   max-width: 68%;
@@ -218,6 +218,26 @@ body {
   padding-left: 2px;
   font-variant-numeric: tabular-nums;
 }
+
+.copy-btn {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  margin-left: 2px;
+  background: transparent;
+  border: 1px solid #252525;
+  border-radius: 6px;
+  color: #555;
+  font-size: 11px;
+  font-family: inherit;
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.copy-btn:hover { background: #1a1a1a; color: #aaa; }
+.copy-btn.copied { color: #7ec87e; border-color: #2a5a2a; }
 
 /* blinking cursor during streaming */
 .cursor {
@@ -660,9 +680,24 @@ function createAssistantBubble() {
   const cursor       = el('span', 'cursor');
   bubble.appendChild(cursor);
   assistantRow.appendChild(bubble);
+
+  const copyBtn = el('button', 'copy-btn');
+  copyBtn.textContent = 'Copy';
+  copyBtn.onclick = () => copyMarkdown(copyBtn, bubble);
+  assistantRow.appendChild(copyBtn);
+
   msgsEl.appendChild(assistantRow);
   scrollBottom();
   return { assistantRow, bubble };
+}
+
+function copyMarkdown(btn, bubble) {
+  navigator.clipboard.writeText(bubble._rawText || '').then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+  }).catch(() => {});
 }
 
 function appendDelta(bubble, text) {
@@ -675,6 +710,8 @@ function appendDelta(bubble, text) {
 function removeCursor(bubble) {
   if (bubble._rawText) {
     bubble.innerHTML = marked.parse(bubble._rawText);
+    const copyBtn = bubble.parentElement?.querySelector('.copy-btn');
+    if (copyBtn) copyBtn.style.display = 'inline-flex';
   } else {
     bubble.querySelector('.cursor')?.remove();
   }
