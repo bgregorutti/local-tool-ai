@@ -90,8 +90,19 @@ uv run main --repl
 | `read_file` | Read file contents, optionally scoped to a line range |
 | `read_pdf` | Extract text from a PDF as markdown |
 | `read_docx` | Extract text from a `.docx` file |
-| `git_status` / `git_log` / `git_tags` / `git_show` / `git_diff` | Read-only git introspection |
+| `git_status` / `git_log` / `git_tags` / `git_show` / `git_diff` | Read-only git introspection. `git_log` takes `revision_range`, `paths`, `no_merges`, `with_stat`; `git_diff` takes `staged`, `base`/`head`, `paths`, `stat_only`; `git_tags` is sorted by version with dates |
+| `git_commit_context` | Everything needed for a commit message in one call: staged/unstaged diffs, untracked files, recent commit style |
+| `git_range_report` | Structured changes between two refs (commits grouped by type, authors, PRs, diffstat) |
+| `git_release_notes_context` | One `git_range_report` per consecutive pair of tags, e.g. `3.0.0→3.0.1`, `3.0.1→3.0.2` |
 | `run_bash` | Execute a shell command (allowlisted, off by default) |
+
+### Git context
+
+Git tools default to the current repository (`repo_path` is optional). When the
+working directory is a git repo, a snapshot (status, last 10 commits, 15 newest
+tags) is added to the system prompt on every turn, so the model needs fewer
+discovery calls. Large diffs are trimmed per file, lock/generated files are
+skipped, and omitted files are listed so the model can ask for them.
 
 ## Project layout
 
@@ -138,3 +149,13 @@ WEB_PORT=7860
 ```
 
 `MAX_ITERATIONS` caps the tool-call loop to prevent infinite cycles.
+
+Optional git settings:
+
+```
+GIT_CONTEXT_MAX_CHARS=20000   # output budget of git_commit_context / git_range_report
+REPO_CONTEXT=1                # set to 0 to disable the git snapshot in the system prompt
+```
+
+Keep LM Studio's context length for the model well above `GIT_CONTEXT_MAX_CHARS`
+(about 16k tokens or more).
