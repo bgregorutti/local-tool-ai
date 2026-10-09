@@ -32,7 +32,8 @@ _audit_logger.propagate = False
 # Tool tier classification
 READONLY_TOOLS: frozenset[str] = frozenset({
     "search_files", "list_folder", "read_file", "read_pdf", "read_docx",
-    "git_status", "git_log", "git_tags", "git_show", "git_diff"
+    "git_status", "git_log", "git_tags", "git_show", "git_diff",
+    "git_commit_context", "git_range_report", "git_release_notes_context",
 })
 
 DESTRUCTIVE_TOOLS: frozenset[str] = frozenset(
@@ -105,6 +106,9 @@ _PATH_ARG: dict[str, str] = {
     "git_tags": "repo_path",
     "git_show": "repo_path",
     "git_diff": "repo_path",
+    "git_commit_context": "repo_path",
+    "git_range_report": "repo_path",
+    "git_release_notes_context": "repo_path",
     "read_pdf": "file_path",
     "read_docx": "file_path",
 }
@@ -136,7 +140,10 @@ _HANDLERS: dict[str, callable] = {
     "git_log": git.run_log,
     "git_tags": git.run_tags,
     "git_show": git.run_show,
-    "git_diff": git.run_diff
+    "git_diff": git.run_diff,
+    "git_commit_context": git.run_commit_context,
+    "git_range_report": git.run_range_report,
+    "git_release_notes_context": git.run_release_notes_context,
 }
 
 
@@ -177,7 +184,9 @@ def _check_path_allowlist(tool_name: str, tool_args: dict) -> str | None:
     if path_arg is None:
         return None
 
-    raw_path = tool_args.get(path_arg, ".")
+    raw_path = tool_args.get(path_arg) or (
+        git.default_repo_path() if tool_name.startswith("git_") else "."
+    )
     target = Path(raw_path).expanduser().resolve()
 
     # Always deny sensitive paths

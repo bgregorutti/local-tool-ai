@@ -140,6 +140,8 @@ async def chat(request: Request) -> StreamingResponse:
         return JSONResponse({"error": "empty message"}, status_code=400)
 
     messages = _get_or_create_session(session_id)
+    # Refresh the git snapshot every turn so it reflects the current repo state
+    messages[0]["content"] = agent.with_repo_context(agent.DEFAULT_SYSTEM)
     messages.append({"role": "user", "content": user_message})
     _trim_messages(messages)
 
