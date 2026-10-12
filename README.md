@@ -19,19 +19,49 @@ uv sync
 
 ## Install globally (recommended)
 
-```bash
-uv tool install .
-ai-agent init        # one-time: creates ~/.config/local-tool-ai/.env with a generated auth token
-```
+Makes the `ai-agent` command available in every folder of your machine.
 
-Then, from any folder:
+**1. Install (once, from this repo):**
 
 ```bash
-ai-agent             # TUI mode, scoped to the current directory
-ai-agent gui         # Web UI, scoped to the current directory
+cd path/to/local-tool-ai
+uv tool install --editable .
 ```
 
-`ai-agent` automatically sets `ALLOWED_ROOT` to your current working directory so the agent can only read/search inside it (Claude-Code-style scoping).
+`--editable` links the command to this repo, so code changes apply immediately.
+Without it, `uv tool install .` installs a frozen copy and you must re-run
+`uv tool install . --force` after every change.
+
+**2. Make sure `~/.local/bin` is on your PATH** (only if `ai-agent` is "command not found"):
+
+```bash
+uv tool update-shell    # then restart your terminal
+```
+
+**3. Create the user config (once):**
+
+```bash
+ai-agent init           # creates ~/.config/local-tool-ai/.env with a generated auth token
+```
+
+Edit that file to set `LM_STUDIO_MODEL` to the model loaded in LM Studio.
+
+**4. Use it from any folder:**
+
+```bash
+cd ~/some/project
+ai-agent                # TUI mode, scoped to the current directory
+ai-agent gui            # Web UI (http://localhost:7860), scoped to the current directory
+```
+
+`ai-agent` sets `ALLOWED_ROOT` to your current working directory so the agent can only read/search inside it.
+
+**Update or remove:**
+
+```bash
+uv tool install --editable . --force   # re-install
+uv tool uninstall local-tool-ai        # remove
+```
 
 ### Config lookup order
 
