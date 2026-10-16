@@ -126,6 +126,7 @@ body {
 
 #empty-state h2 { font-size: 20px; color: #444; font-weight: 600; }
 #empty-state p  { font-size: 13px; }
+.welcome-cwd { font-size: 12px; color: #888; font-family: monospace; }
 
 /* ── Message rows ────────────────────────────────────────────────────── */
 .msg-row {
@@ -461,6 +462,7 @@ body {
     <div id="empty-state">
       <h2>Local Tool AI</h2>
       <p>Search files · read code · run commands</p>
+      <p class="welcome-cwd"></p>
     </div>
   </div>
 
@@ -515,10 +517,19 @@ function authHeaders() {
   return h;
 }
 
+let currentCwd = '';
+function welcomeCwd() {
+  return currentCwd ? `Welcome! Working directory: ${currentCwd}` : 'Welcome!';
+}
+
 // ── Model info ────────────────────────────────────────────────────────────────
 fetch('/info')
   .then(r => r.json())
-  .then(d => { document.getElementById('model-tag').textContent = d.model; })
+  .then(d => {
+    document.getElementById('model-tag').textContent = d.model;
+    currentCwd = d.cwd || '';
+    document.querySelectorAll('.welcome-cwd').forEach(e => { e.textContent = welcomeCwd(); });
+  })
   .catch(() => { document.getElementById('model-tag').textContent = 'unknown'; });
 
 // ── Textarea auto-resize + Enter key ─────────────────────────────────────────
@@ -551,6 +562,7 @@ async function newChat() {
     <div id="empty-state">
       <h2>Local Tool AI</h2>
       <p>Search files · read code · run commands</p>
+      <p class="welcome-cwd">${welcomeCwd()}</p>
     </div>`;
 }
 
@@ -630,6 +642,16 @@ function handleEvent(evt, assistantRow, bubble) {
     case 'tool_call':
       _activeToolCard = appendToolCard(evt.name, evt.args, assistantRow);
       break;
+
+    case 'notice': {
+      const row = el('div', 'tool-row');
+      const note = el('div', 'welcome-cwd');
+      note.textContent = '📁 ' + evt.content;
+      row.appendChild(note);
+      msgsEl.insertBefore(row, assistantRow);
+      currentCwd = evt.content.replace(/^[^:]*:\s*/, '');
+      break;
+    }
 
     case 'tool_result':
       if (_activeToolCard) finaliseToolCard(_activeToolCard, evt.content);

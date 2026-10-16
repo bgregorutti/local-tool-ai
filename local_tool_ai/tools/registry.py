@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from local_tool_ai.tools import (
+    change_directory,
     git,
     list_folder,
     read_docx,
@@ -31,7 +32,7 @@ _audit_logger.propagate = False
 
 # Tool tier classification
 READONLY_TOOLS: frozenset[str] = frozenset({
-    "search_files", "list_folder", "read_file", "read_pdf", "read_docx",
+    "search_files", "list_folder", "read_file", "read_pdf", "read_docx", "change_directory",
     "git_status", "git_log", "git_tags", "git_show", "git_diff",
     "git_commit_context", "git_range_report", "git_release_notes_context",
 })
@@ -100,6 +101,7 @@ SENSITIVE_PATHS: list[Path] = [
 _PATH_ARG: dict[str, str] = {
     "search_files": "root",
     "list_folder": "path",
+    "change_directory": "path",
     "read_file": "path",
     "git_status": "repo_path",
     "git_log": "repo_path",
@@ -116,6 +118,7 @@ _PATH_ARG: dict[str, str] = {
 READONLY_SCHEMAS: list[dict] = [
     search_files.SCHEMA,
     list_folder.SCHEMA,
+    change_directory.SCHEMA,
     read_file.SCHEMA,
     *git.SCHEMAS,
     read_pdf.SCHEMA,
@@ -132,6 +135,7 @@ SCHEMAS: list[dict] = READONLY_SCHEMAS + DESTRUCTIVE_SCHEMAS
 _HANDLERS: dict[str, callable] = {
     "search_files": search_files.run,
     "list_folder": list_folder.run,
+    "change_directory": change_directory.run,
     "read_file": read_file.run,
     "read_pdf": read_pdf.run,
     "read_docx": read_docx.run,

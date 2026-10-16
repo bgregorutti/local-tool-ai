@@ -15,6 +15,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from local_tool_ai.tools import git
+from local_tool_ai.tools.change_directory import CHANGED_PREFIX
 from local_tool_ai.tools.registry import DESTRUCTIVE_TOOLS, dispatch, get_schemas
 
 
@@ -164,6 +165,8 @@ def run(
 
             if verbose:
                 _print_tool_result(name, result)
+                if name == "change_directory" and result.startswith(CHANGED_PREFIX):
+                    console.print(f"[bold cyan]📁 {escape(result)}[/]")
 
             messages.append(
                 {
@@ -399,6 +402,9 @@ async def run_events(
                 result = await asyncio.to_thread(
                     lambda n=name, a=args: dispatch(n, a, bash_enabled=bash_enabled)
                 )
+
+            if name == "change_directory" and result.startswith(CHANGED_PREFIX):
+                yield {"type": "notice", "content": result}
 
             display = result[:500] + ("…" if len(result) > 500 else "")
             yield {"type": "tool_result", "name": name, "content": display}

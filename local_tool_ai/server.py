@@ -108,7 +108,9 @@ async def index() -> HTMLResponse:
 
 @app.get("/info")
 async def info() -> JSONResponse:
-    return JSONResponse({"model": os.environ.get("LM_STUDIO_MODEL", "unknown")})
+    return JSONResponse(
+        {"model": os.environ.get("LM_STUDIO_MODEL", "unknown"), "cwd": os.getcwd()}
+    )
 
 
 def _check_rate_limit(session_id: str) -> bool:

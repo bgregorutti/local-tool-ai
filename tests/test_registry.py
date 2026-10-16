@@ -6,7 +6,7 @@ from local_tool_ai.tools.registry import DESTRUCTIVE_TOOLS, READONLY_TOOLS, SCHE
 def test_schemas_list_has_all_tools():
     names = {s["function"]["name"] for s in SCHEMAS}
     assert names == {
-        "search_files", "list_folder", "read_file", "run_bash",
+        "search_files", "list_folder", "read_file", "run_bash", "change_directory",
         "git_status", "git_log", "git_tags", "git_show", "git_diff", "read_pdf", "read_docx",
         "git_commit_context", "git_range_report", "git_release_notes_context",
     }

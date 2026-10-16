@@ -80,8 +80,9 @@ def main(
 
 def _run_repl(system: str, verbose: bool) -> None:
     console.print(
-        "[bold green]Local Tool-AI REPL[/] — type [bold]exit[/] or press Ctrl-C to quit.\n"
+        "[bold green]Local Tool-AI REPL[/] — type [bold]exit[/] or press Ctrl-C to quit."
     )
+    console.print(f"Welcome! I can search, list and read files here.\n📁 Working directory: {Path.cwd()}\n")
     while True:
         try:
             query = pt_prompt(">: ", history=FileHistory(".agent_history"))
